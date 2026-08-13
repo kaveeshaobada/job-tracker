@@ -5,7 +5,12 @@ const applicationSchema = z.object({
   role: z.string().trim().min(1, "Role is required").max(200),
   status: z.enum(["Applied", "OA", "Interview", "Offer", "Rejected"]).optional(),
   link: z.string().trim().url("Must be a valid URL").optional().or(z.literal("")).nullable(),
-  notes: z.string().trim().max(2000).optional().or(z.literal("")).nullable(),
+  followUpDate: z.coerce.date().optional().nullable(),
+  tagNames: z.array(z.string().trim().min(1).max(50)).max(10).optional(),
 });
 
-module.exports = { applicationSchema };
+const activityLogSchema = z.object({
+  content: z.string().trim().min(1, "Note cannot be empty").max(2000),
+});
+
+module.exports = { applicationSchema, activityLogSchema };

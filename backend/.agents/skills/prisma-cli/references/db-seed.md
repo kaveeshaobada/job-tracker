@@ -96,7 +96,7 @@ main()
     await prisma.$disconnect()
   })
   .catch(async (e) => {
-    logger.info(...)(e)
+    console.error(e)
     await prisma.$disconnect()
     process.exit(1)
   })

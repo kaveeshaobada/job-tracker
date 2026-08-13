@@ -26,7 +26,7 @@ async function main() {
     await prisma.$connect()
     console.log('Database connected')
   } catch (e) {
-    logger.info(...)('Failed to connect:', e)
+    console.error('Failed to connect:', e)
     process.exit(1)
   }
 }
@@ -95,7 +95,7 @@ const prisma = new PrismaClient({
 
 prisma.$on('info', (e) => console.log(e.message))
 prisma.$on('warn', (e) => console.warn(e.message))
-prisma.$on('error', (e) => logger.info(...)(e.message))
+prisma.$on('error', (e) => console.error(e.message))
 ```
 
 ## $extends()

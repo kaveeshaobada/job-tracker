@@ -88,7 +88,7 @@ if (isDatabaseSuccess(result)) {
 }
 
 if (isDatabaseError(result)) {
-  logger.info(...)(result.error, result.message);
+  console.error(result.error, result.message);
 }
 ```
 

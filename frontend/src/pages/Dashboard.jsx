@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import api from "../api/client";
 import ApplicationCard from "../components/ApplicationCard";
 import AddApplicationForm from "../components/AddApplicationForm";
+import toast from "react-hot-toast";
 
 function Dashboard() {
   const { user, logout } = useAuth();
@@ -10,19 +11,22 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
 
-  const fetchApplications = async () => {
-    try {
-      const res = await api.get("/applications");
-      setApplications(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchApplications();
+    let ignore = false;
+    async function load() {
+      try {
+        const res = await api.get("/applications");
+        if (!ignore) setApplications(res.data);
+      } catch {
+        if (!ignore) toast.error("Failed to load applications");
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const handleAdd = async (data) => {
@@ -41,31 +45,41 @@ function Dashboard() {
     setApplications((prev) => prev.filter((a) => a.id !== id));
   };
 
+  const handleNoteAdded = (appId, note) => {
+    setApplications((prev) =>
+      prev.map((a) =>
+        a.id === appId ? { ...a, activityLogs: [note, ...(a.activityLogs || [])] } : a
+      )
+    );
+  };
+
   const filtered =
     filter === "All" ? applications : applications.filter((a) => a.status === filter);
 
   const statuses = ["All", "Applied", "OA", "Interview", "Offer", "Rejected"];
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Welcome, {user?.email}</h1>
         <button
           onClick={logout}
-          className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
+          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
         >
           Log Out
         </button>
       </div>
 
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex gap-2">
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
+        <div className="flex gap-2 flex-wrap">
           {statuses.map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
               className={`px-3 py-1 rounded text-sm ${
-                filter === s ? "bg-blue-600" : "bg-gray-800 text-gray-400"
+                filter === s
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
               }`}
             >
               {s}
@@ -87,6 +101,7 @@ function Dashboard() {
               app={app}
               onStatusChange={handleStatusChange}
               onDelete={handleDelete}
+              onNoteAdded={handleNoteAdded}
             />
           ))}
         </div>

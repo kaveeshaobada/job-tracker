@@ -204,5 +204,5 @@ prisma.$on('query', (e) => {
 ```typescript
 prisma.$on('info', (e) => console.log(e.message))
 prisma.$on('warn', (e) => console.warn(e.message))
-prisma.$on('error', (e) => logger.info(...)(e.message))
+prisma.$on('error', (e) => console.error(e.message))
 ```

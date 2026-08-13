@@ -1,48 +1,150 @@
-const statusColors = {
-  Applied: "bg-blue-500",
-  OA: "bg-yellow-500",
-  Interview: "bg-purple-500",
-  Offer: "bg-green-500",
-  Rejected: "bg-red-500",
-};
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown, ExternalLink, Trash2, Clock, MessageSquarePlus } from "lucide-react";
+import { formatDistanceToNow, isPast } from "date-fns";
+import StatusBadge from "./ui/StatusBadge";
+import Badge from "./ui/Badge";
+import api from "../api/client";
+import toast from "react-hot-toast";
 
-function ApplicationCard({ app, onStatusChange, onDelete }) {
+const statusOptions = ["Applied", "OA", "Interview", "Offer", "Rejected"];
+
+function ApplicationCard({ app, onStatusChange, onDelete, onNoteAdded }) {
+  const [expanded, setExpanded] = useState(false);
+  const [noteText, setNoteText] = useState("");
+  const [submittingNote, setSubmittingNote] = useState(false);
+
+  const overdue = app.followUpDate && isPast(new Date(app.followUpDate));
+
+  const handleAddNote = async (e) => {
+    e.preventDefault();
+    if (!noteText.trim()) return;
+    setSubmittingNote(true);
+    try {
+      const res = await api.post(`/applications/${app.id}/notes`, { content: noteText });
+      onNoteAdded(app.id, res.data);
+      setNoteText("");
+      toast.success("Note added");
+    } catch {
+      toast.error("Failed to add note");
+    } finally {
+      setSubmittingNote(false);
+    }
+  };
+
   return (
-    <div className="bg-gray-800 p-4 rounded-lg flex justify-between items-center">
-      <div>
-        <h3 className="font-semibold text-lg">{app.company}</h3>
-        <p className="text-gray-400 text-sm">{app.role}</p>
-        {app.link && (
-          <a
-            href={app.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 text-xs hover:underline"
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden"
+    >
+      <div className="p-4 flex justify-between items-start gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+              {app.company}
+            </h3>
+            {overdue && (
+              <span className="flex items-center gap-1 text-xs text-red-500 font-medium">
+                <Clock size={12} /> Follow up
+              </span>
+            )}
+          </div>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{app.role}</p>
+
+          <div className="flex items-center gap-2 flex-wrap mt-2">
+            {app.tags?.map((tag) => (
+              <Badge key={tag.id} color={tag.color}>
+                {tag.name}
+              </Badge>
+            ))}
+            {app.link && (
+              <a
+                href={app.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+              >
+                <ExternalLink size={12} /> Posting
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <select
+            value={app.status}
+            onChange={(e) => onStatusChange(app.id, e.target.value)}
+            className="bg-transparent border-none text-xs cursor-pointer"
           >
-            View posting
-          </a>
+            {statusOptions.map((s) => (
+              <option key={s} value={s} className="text-black">
+                {s}
+              </option>
+            ))}
+          </select>
+          <StatusBadge status={app.status} />
+          <button
+            onClick={() => onDelete(app.id)}
+            className="text-gray-400 hover:text-red-500 p-1"
+          >
+            <Trash2 size={16} />
+          </button>
+          <button
+            onClick={() => setExpanded((e) => !e)}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1"
+          >
+            <motion.div animate={{ rotate: expanded ? 180 : 0 }}>
+              <ChevronDown size={18} />
+            </motion.div>
+          </button>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-900/50"
+          >
+            <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
+              {app.activityLogs?.length ? (
+                app.activityLogs.map((log) => (
+                  <div key={log.id} className="text-sm">
+                    <p className="text-gray-700 dark:text-gray-300">{log.content}</p>
+                    <p className="text-xs text-gray-400">
+                      {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-gray-400 italic">No notes yet</p>
+              )}
+            </div>
+            <form onSubmit={handleAddNote} className="flex gap-2">
+              <input
+                type="text"
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder="Add a note..."
+                className="flex-1 text-sm p-2 rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                disabled={submittingNote}
+                className="text-blue-500 hover:text-blue-600 disabled:opacity-50 p-2"
+              >
+                <MessageSquarePlus size={18} />
+              </button>
+            </form>
+          </motion.div>
         )}
-      </div>
-      <div className="flex items-center gap-3">
-        <select
-          value={app.status}
-          onChange={(e) => onStatusChange(app.id, e.target.value)}
-          className={`text-xs font-medium px-2 py-1 rounded text-white ${statusColors[app.status]}`}
-        >
-          {Object.keys(statusColors).map((s) => (
-            <option key={s} value={s} className="text-black">
-              {s}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={() => onDelete(app.id)}
-          className="text-gray-500 hover:text-red-400 text-sm"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
+      </AnimatePresence>
+    </motion.div>
   );
 }
 

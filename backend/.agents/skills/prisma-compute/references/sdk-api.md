@@ -62,7 +62,7 @@ const result = await compute.deploy({
 if (result.isOk()) {
   console.log(result.value.deploymentEndpointDomain)
 } else {
-  logger.info(...)(result.error.message)
+  console.error(result.error.message)
 }
 ```
 
