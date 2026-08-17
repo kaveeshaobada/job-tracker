@@ -22,6 +22,55 @@ async function resolveTags(tagNames = []) {
   return tags;
 }
 
+router.get("/stats", async (req, res, next) => {
+  try {
+    const applications = await prisma.application.findMany({
+      where: { userId: req.userId },
+      select: { status: true, createdAt: true },
+    });
+
+    const statusCounts = applications.reduce((acc, app) => {
+      acc[app.status] = (acc[app.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Applications per week, last 8 weeks
+    const now = new Date();
+    const weeklyBuckets = Array.from({ length: 8 }, (_, i) => {
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - (7 - i) * 7);
+      return { week: `Wk ${i + 1}`, count: 0, weekStart };
+    });
+
+    applications.forEach((app) => {
+      const created = new Date(app.createdAt);
+      for (let i = weeklyBuckets.length - 1; i >= 0; i--) {
+        if (created >= weeklyBuckets[i].weekStart) {
+          weeklyBuckets[i].count++;
+          break;
+        }
+      }
+    });
+
+    const total = applications.length;
+    const responded = applications.filter((a) => a.status !== "Applied").length;
+    const responseRate = total > 0 ? Math.round((responded / total) * 100) : 0;
+    const offers = statusCounts["Offer"] || 0;
+    const offerRate = total > 0 ? Math.round((offers / total) * 100) : 0;
+
+    res.json({
+      total,
+      statusCounts,
+      weeklyTrend: weeklyBuckets.map(({ week, count }) => ({ week, count })),
+      responseRate,
+      offerRate,
+    });
+  } catch (err) {
+    logger.error({ err }, "Failed to fetch stats");
+    next(err);
+  }
+});
+
 router.get("/", async (req, res, next) => {
   try {
     const applications = await prisma.application.findMany({

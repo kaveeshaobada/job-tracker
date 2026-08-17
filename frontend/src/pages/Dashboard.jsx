@@ -4,12 +4,16 @@ import api from "../api/client";
 import ApplicationCard from "../components/ApplicationCard";
 import AddApplicationForm from "../components/AddApplicationForm";
 import toast from "react-hot-toast";
+import { LayoutGrid, List, BarChart3 } from "lucide-react";
+import KanbanBoard from "../components/KanbanBoard";
+import AnalyticsView from "../components/AnalyticsView";
 
 function Dashboard() {
   const { user, logout } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
+  const [view, setView] = useState("list"); // "list" | "kanban" | "analytics"
 
   useEffect(() => {
     let ignore = false;
@@ -86,13 +90,43 @@ function Dashboard() {
             </button>
           ))}
         </div>
+
+        <div className="flex bg-gray-200 dark:bg-gray-800 rounded-lg p-1">
+          <button
+            onClick={() => setView("list")}
+            className={`p-1.5 rounded ${view === "list" ? "bg-white dark:bg-gray-700 shadow-sm" : "text-gray-500"}`}
+          >
+            <List size={16} />
+          </button>
+          <button
+            onClick={() => setView("kanban")}
+            className={`p-1.5 rounded ${view === "kanban" ? "bg-white dark:bg-gray-700 shadow-sm" : "text-gray-500"}`}
+          >
+            <LayoutGrid size={16} />
+          </button>
+          <button
+            onClick={() => setView("analytics")}
+            className={`p-1.5 rounded ${view === "analytics" ? "bg-white dark:bg-gray-700 shadow-sm" : "text-gray-500"}`}
+          >
+            <BarChart3 size={16} />
+          </button>
+        </div>
+
         <AddApplicationForm onAdd={handleAdd} />
       </div>
 
-      {loading ? (
+      {view === "analytics" ? (
+        <AnalyticsView />
+      ) : loading ? (
         <p className="text-gray-400">Loading...</p>
       ) : filtered.length === 0 ? (
         <p className="text-gray-400">No applications yet.</p>
+      ) : view === "kanban" ? (
+        <KanbanBoard
+          applications={filtered}
+          onStatusChange={handleStatusChange}
+          onDelete={handleDelete}
+        />
       ) : (
         <div className="space-y-3">
           {filtered.map((app) => (
