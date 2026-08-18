@@ -1,6 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Trash2, ExternalLink } from "lucide-react";
+import { Trash2, ExternalLink, Clock } from "lucide-react";
+import { isPast } from "date-fns";
 import Badge from "./ui/Badge";
 
 function KanbanCard({ app, onDelete }) {
@@ -14,6 +15,8 @@ function KanbanCard({ app, onDelete }) {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const overdue = app.followUpDate && isPast(new Date(app.followUpDate));
+
   return (
     <div
       ref={setNodeRef}
@@ -24,9 +27,12 @@ function KanbanCard({ app, onDelete }) {
     >
       <div className="flex justify-between items-start gap-2">
         <div className="min-w-0">
-          <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
-            {app.company}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
+              {app.company}
+            </p>
+            {overdue && <Clock size={12} className="text-red-500 flex-shrink-0" />}
+          </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{app.role}</p>
         </div>
         <button
@@ -49,7 +55,6 @@ function KanbanCard({ app, onDelete }) {
         </div>
       )}
       {app.link && (
-        
         <a
           href={app.link}
           target="_blank"

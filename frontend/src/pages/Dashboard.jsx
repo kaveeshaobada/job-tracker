@@ -4,9 +4,10 @@ import api from "../api/client";
 import ApplicationCard from "../components/ApplicationCard";
 import AddApplicationForm from "../components/AddApplicationForm";
 import toast from "react-hot-toast";
-import { LayoutGrid, List, BarChart3 } from "lucide-react";
 import KanbanBoard from "../components/KanbanBoard";
 import AnalyticsView from "../components/AnalyticsView";
+import { LayoutGrid, List, BarChart3, Download, Search } from "lucide-react";
+import CommandPalette from "../components/CommandPalette";
 
 function Dashboard() {
   const { user, logout } = useAuth();
@@ -14,6 +15,15 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
   const [view, setView] = useState("list"); // "list" | "kanban" | "analytics"
+  const handleExport = async () => {
+  const res = await api.get("/applications/export", { responseType: "blob" });
+  const url = window.URL.createObjectURL(new Blob([res.data]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "applications.csv";
+  link.click();
+  window.URL.revokeObjectURL(url);
+};
 
   useEffect(() => {
     let ignore = false;
@@ -55,6 +65,37 @@ function Dashboard() {
         a.id === appId ? { ...a, activityLogs: [note, ...(a.activityLogs || [])] } : a
       )
     );
+  };
+
+  const handleAttachmentAdded = (appId, attachment) => {
+    setApplications((prev) =>
+      prev.map((a) =>
+        a.id === appId ? { ...a, attachments: [...(a.attachments || []), attachment] } : a
+      )
+    );
+  };
+
+  const handleAttachmentDeleted = (appId, attachmentId) => {
+    setApplications((prev) =>
+      prev.map((a) =>
+        a.id === appId
+          ? { ...a, attachments: a.attachments.filter((f) => f.id !== attachmentId) }
+          : a
+      )
+    );
+  };
+
+  const handleSelectApplication = (appId) => {
+    setView("list");
+    setFilter("All");
+    setTimeout(() => {
+      const el = document.getElementById(`app-${appId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("ring-2", "ring-blue-500");
+        setTimeout(() => el.classList.remove("ring-2", "ring-blue-500"), 1500);
+      }
+    }, 250);
   };
 
   const filtered =
@@ -112,6 +153,24 @@ function Dashboard() {
           </button>
         </div>
 
+        <button
+          onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-sm hover:bg-gray-300 dark:hover:bg-gray-700"
+        >
+          <Search size={14} /> Search
+          <kbd className="text-xs bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600">
+            ⌘K
+          </kbd>
+        </button>
+
+        <button
+          onClick={handleExport}
+          className="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700"
+          title="Export as CSV"
+        >
+          <Download size={16} />
+        </button>
+
         <AddApplicationForm onAdd={handleAdd} />
       </div>
 
@@ -136,10 +195,15 @@ function Dashboard() {
               onStatusChange={handleStatusChange}
               onDelete={handleDelete}
               onNoteAdded={handleNoteAdded}
+              onAttachmentAdded={handleAttachmentAdded}
+              onAttachmentDeleted={handleAttachmentDeleted}
             />
           ))}
         </div>
       )}
+
+      <CommandPalette applications={applications} onSelectApplication={handleSelectApplication} />
+
     </div>
   );
 }

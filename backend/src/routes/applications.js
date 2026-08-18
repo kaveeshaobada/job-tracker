@@ -4,6 +4,8 @@ const logger = require("../logger");
 const requireAuth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { applicationSchema, activityLogSchema } = require("../validators/applicationValidators");
+const upload = require("../middleware/upload");
+const cloudinary = require("../cloudinary");
 
 const router = express.Router();
 
@@ -21,6 +23,42 @@ async function resolveTags(tagNames = []) {
   );
   return tags;
 }
+
+router.get("/export", async (req, res, next) => {
+  try {
+    const applications = await prisma.application.findMany({
+      where: { userId: req.userId },
+      include: { tags: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const headers = ["Company", "Role", "Status", "Date Applied", "Follow-up Date", "Link", "Tags"];
+    const escapeCsv = (val) => `"${String(val ?? "").replace(/"/g, '""')}"`;
+
+    const rows = applications.map((a) =>
+      [
+        a.company,
+        a.role,
+        a.status,
+        new Date(a.dateApplied).toLocaleDateString(),
+        a.followUpDate ? new Date(a.followUpDate).toLocaleDateString() : "",
+        a.link || "",
+        a.tags.map((t) => t.name).join("; "),
+      ]
+        .map(escapeCsv)
+        .join(",")
+    );
+
+    const csv = [headers.map(escapeCsv).join(","), ...rows].join("\n");
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", "attachment; filename=applications.csv");
+    res.send(csv);
+  } catch (err) {
+    logger.error({ err }, "Failed to export CSV");
+    next(err);
+  }
+});
 
 router.get("/stats", async (req, res, next) => {
   try {
@@ -75,7 +113,7 @@ router.get("/", async (req, res, next) => {
   try {
     const applications = await prisma.application.findMany({
       where: { userId: req.userId },
-      include: { tags: true, activityLogs: { orderBy: { createdAt: "desc" } } },
+      include: { tags: true, activityLogs: { orderBy: { createdAt: "desc" } }, attachments: true },
       orderBy: { createdAt: "desc" },
     });
     res.json(applications);
@@ -96,7 +134,7 @@ router.post("/", validate(applicationSchema), async (req, res, next) => {
         userId: req.userId,
         tags: { connect: tagConnections },
       },
-      include: { tags: true, activityLogs: true },
+      include: { tags: true, activityLogs: { orderBy: { createdAt: "desc" } }, attachments: true },
     });
     res.status(201).json(application);
   } catch (err) {
@@ -123,7 +161,7 @@ router.put("/:id", validate(applicationSchema), async (req, res, next) => {
         ...data,
         ...(tagConnections && { tags: { set: tagConnections } }),
       },
-      include: { tags: true, activityLogs: { orderBy: { createdAt: "desc" } } },
+      include: { tags: true, activityLogs: { orderBy: { createdAt: "desc" } }, attachments: true },
     });
     res.json(updated);
   } catch (err) {
@@ -164,6 +202,56 @@ router.post("/:id/notes", validate(activityLogSchema), async (req, res, next) =>
     res.status(201).json(note);
   } catch (err) {
     logger.error({ err }, "Failed to add note");
+    next(err);
+  }
+});
+
+router.post("/:id/attachments", upload.single("file"), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.application.findUnique({ where: { id: Number(id) } });
+    if (!existing || existing.userId !== req.userId) {
+      return res.status(404).json({ error: "Application not found" });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const attachment = await prisma.attachment.create({
+      data: {
+        fileName: req.file.originalname,
+        url: req.file.path, // Cloudinary URL
+        applicationId: Number(id),
+      },
+    });
+    res.status(201).json(attachment);
+  } catch (err) {
+    logger.error({ err }, "Failed to upload attachment");
+    next(err);
+  }
+});
+
+router.delete("/:id/attachments/:attachmentId", async (req, res, next) => {
+  try {
+    const { id, attachmentId } = req.params;
+    const existing = await prisma.application.findUnique({ where: { id: Number(id) } });
+    if (!existing || existing.userId !== req.userId) {
+      return res.status(404).json({ error: "Application not found" });
+    }
+
+    const attachment = await prisma.attachment.findUnique({
+      where: { id: Number(attachmentId) },
+    });
+    if (attachment) {
+      // Extract public_id from Cloudinary URL to delete the actual file too
+      const publicId = attachment.url.split("/").slice(-2).join("/").split(".")[0];
+      await cloudinary.uploader.destroy(publicId, { resource_type: "raw" }).catch(() => {});
+    }
+
+    await prisma.attachment.delete({ where: { id: Number(attachmentId) } });
+    res.status(204).send();
+  } catch (err) {
+    logger.error({ err }, "Failed to delete attachment");
     next(err);
   }
 });

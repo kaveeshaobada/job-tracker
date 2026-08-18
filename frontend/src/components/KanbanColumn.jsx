@@ -27,7 +27,7 @@ function KanbanColumn({ status, applications, onDelete }) {
         </span>
       </div>
       <SortableContext
-        items={applications.map((a) => a.id)}
+        items={applications.map((a) => a.id)} 
         strategy={verticalListSortingStrategy}
       >
         <div className="px-2 pb-2 space-y-2 min-h-[100px]">
