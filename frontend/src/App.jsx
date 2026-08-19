@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
+import Contacts from "./pages/Contacts";
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -33,6 +34,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/contacts"
+        element={
+          <ProtectedRoute>
+            <Contacts />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
@@ -49,5 +58,7 @@ function App() {
     </BrowserRouter>
   );
 }
+
+
 
 export default App;

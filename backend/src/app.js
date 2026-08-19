@@ -10,6 +10,7 @@ const applicationRoutes = require("./routes/applications");
 const errorHandler = require("./middleware/errorHandler");
 const { apiLimiter } = require("./middleware/rateLimiter");
 const userRoutes = require("./routes/users");
+const contactRoutes = require("./routes/contacts");
 
 const app = express();
 
@@ -37,5 +38,7 @@ app.get("/", (req, res) => res.send("Job Tracker API running"));
 app.use(errorHandler);
 
 app.use("/api/users", userRoutes);
+
+app.use("/api/contacts", contactRoutes);
 
 module.exports = app;
