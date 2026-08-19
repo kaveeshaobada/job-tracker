@@ -8,6 +8,7 @@ import KanbanBoard from "../components/KanbanBoard";
 import AnalyticsView from "../components/AnalyticsView";
 import { LayoutGrid, List, BarChart3, Download, Search } from "lucide-react";
 import CommandPalette from "../components/CommandPalette";
+import AppShell from "../components/AppShell";
 
 function Dashboard() {
   const { user, logout } = useAuth();
@@ -104,7 +105,7 @@ function Dashboard() {
   const statuses = ["All", "Applied", "OA", "Interview", "Offer", "Rejected"];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-8">
+    <AppShell className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Welcome, {user?.email}</h1>
         <button
@@ -204,7 +205,7 @@ function Dashboard() {
 
       <CommandPalette applications={applications} onSelectApplication={handleSelectApplication} />
 
-    </div>
+    </AppShell>
   );
 }
 

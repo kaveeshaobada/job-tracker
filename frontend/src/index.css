@@ -2,6 +2,22 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --color-surface: #ffffff;
+  --color-surface-dark: #12121a;
+  --color-elevated: #f8f7fb;
+  --color-elevated-dark: #1c1c26;
+  --color-border-subtle: #e8e6ef;
+  --color-border-subtle-dark: #2a2a38;
+  --color-accent: #6952e8;
+  --color-accent-hover: #5842d1;
+  --color-ink: #17171f;
+  --color-ink-dark: #f0eff5;
+  --color-muted: #6b6875;
+  --color-muted-dark: #8f8ca0;
+}
+
 body {
   margin: 0;
+  font-feature-settings: "cv11", "ss01";
 }

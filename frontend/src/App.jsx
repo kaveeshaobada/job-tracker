@@ -5,6 +5,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -14,6 +15,14 @@ function ProtectedRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        }
+    />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route

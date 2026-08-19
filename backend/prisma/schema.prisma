@@ -10,8 +10,12 @@ model User {
   id           Int           @id @default(autoincrement())
   email        String        @unique
   password     String
+  name         String?
+  targetRole   String?
+  weeklyGoal   Int           @default(5)
   createdAt    DateTime      @default(now())
   applications Application[]
+  contacts     Contact[]
 }
 
 model Application {
@@ -54,4 +58,17 @@ model ActivityLog {
   createdAt     DateTime    @default(now())
   applicationId Int
   application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model Contact {
+  id            Int       @id @default(autoincrement())
+  name          String
+  role          String?
+  company       String?
+  email         String?
+  notes         String?
+  applicationId Int?
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id])
+  createdAt     DateTime  @default(now())
 }
