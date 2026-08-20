@@ -7,6 +7,7 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Contacts from "./pages/Contacts";
+import Calendar from "./pages/Calendar";
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -39,6 +40,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Contacts />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/calendar"
+        element={
+          <ProtectedRoute>
+            <Calendar />
           </ProtectedRoute>
         }
       />

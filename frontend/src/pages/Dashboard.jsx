@@ -11,20 +11,21 @@ import CommandPalette from "../components/CommandPalette";
 import AppShell from "../components/AppShell";
 
 function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
-  const [view, setView] = useState("list"); // "list" | "kanban" | "analytics"
+  const [view, setView] = useState("list");
+
   const handleExport = async () => {
-  const res = await api.get("/applications/export", { responseType: "blob" });
-  const url = window.URL.createObjectURL(new Blob([res.data]));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "applications.csv";
-  link.click();
-  window.URL.revokeObjectURL(url);
-};
+    const res = await api.get("/applications/export", { responseType: "blob" });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "applications.csv";
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -93,8 +94,8 @@ function Dashboard() {
       const el = document.getElementById(`app-${appId}`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
-        el.classList.add("ring-2", "ring-blue-500");
-        setTimeout(() => el.classList.remove("ring-2", "ring-blue-500"), 1500);
+        el.classList.add("ring-2", "ring-accent");
+        setTimeout(() => el.classList.remove("ring-2", "ring-accent"), 1500);
       }
     }, 250);
   };
@@ -105,15 +106,12 @@ function Dashboard() {
   const statuses = ["All", "Applied", "OA", "Interview", "Offer", "Rejected"];
 
   return (
-    <AppShell className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">Welcome, {user?.email}</h1>
-        <button
-          onClick={logout}
-          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-        >
-          Log Out
-        </button>
+    <AppShell>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Welcome back{user?.name ? `, ${user.name}` : ""}</h1>
+        <p className="text-sm text-muted dark:text-muted-dark">
+          {applications.length} application{applications.length !== 1 ? "s" : ""} tracked
+        </p>
       </div>
 
       <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
@@ -122,10 +120,10 @@ function Dashboard() {
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`px-3 py-1 rounded text-sm ${
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 filter === s
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                  ? "bg-accent text-white"
+                  : "bg-elevated dark:bg-elevated-dark text-muted dark:text-muted-dark hover:text-ink dark:hover:text-ink-dark"
               }`}
             >
               {s}
@@ -133,54 +131,56 @@ function Dashboard() {
           ))}
         </div>
 
-        <div className="flex bg-gray-200 dark:bg-gray-800 rounded-lg p-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex bg-elevated dark:bg-elevated-dark rounded-lg p-1">
+            <button
+              onClick={() => setView("list")}
+              className={`p-1.5 rounded ${view === "list" ? "bg-surface dark:bg-surface-dark shadow-sm text-accent" : "text-muted dark:text-muted-dark"}`}
+            >
+              <List size={16} />
+            </button>
+            <button
+              onClick={() => setView("kanban")}
+              className={`p-1.5 rounded ${view === "kanban" ? "bg-surface dark:bg-surface-dark shadow-sm text-accent" : "text-muted dark:text-muted-dark"}`}
+            >
+              <LayoutGrid size={16} />
+            </button>
+            <button
+              onClick={() => setView("analytics")}
+              className={`p-1.5 rounded ${view === "analytics" ? "bg-surface dark:bg-surface-dark shadow-sm text-accent" : "text-muted dark:text-muted-dark"}`}
+            >
+              <BarChart3 size={16} />
+            </button>
+          </div>
+
           <button
-            onClick={() => setView("list")}
-            className={`p-1.5 rounded ${view === "list" ? "bg-white dark:bg-gray-700 shadow-sm" : "text-gray-500"}`}
+            onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-elevated dark:bg-elevated-dark text-muted dark:text-muted-dark text-sm hover:text-ink dark:hover:text-ink-dark"
           >
-            <List size={16} />
+            <Search size={14} /> Search
+            <kbd className="text-xs bg-surface dark:bg-surface-dark px-1.5 py-0.5 rounded border border-border-subtle dark:border-border-subtle-dark">
+              ⌘K
+            </kbd>
           </button>
+
           <button
-            onClick={() => setView("kanban")}
-            className={`p-1.5 rounded ${view === "kanban" ? "bg-white dark:bg-gray-700 shadow-sm" : "text-gray-500"}`}
+            onClick={handleExport}
+            className="p-2 rounded-lg bg-elevated dark:bg-elevated-dark text-muted dark:text-muted-dark hover:text-ink dark:hover:text-ink-dark"
+            title="Export as CSV"
           >
-            <LayoutGrid size={16} />
+            <Download size={16} />
           </button>
-          <button
-            onClick={() => setView("analytics")}
-            className={`p-1.5 rounded ${view === "analytics" ? "bg-white dark:bg-gray-700 shadow-sm" : "text-gray-500"}`}
-          >
-            <BarChart3 size={16} />
-          </button>
+
+          <AddApplicationForm onAdd={handleAdd} />
         </div>
-
-        <button
-          onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-sm hover:bg-gray-300 dark:hover:bg-gray-700"
-        >
-          <Search size={14} /> Search
-          <kbd className="text-xs bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600">
-            ⌘K
-          </kbd>
-        </button>
-
-        <button
-          onClick={handleExport}
-          className="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700"
-          title="Export as CSV"
-        >
-          <Download size={16} />
-        </button>
-
-        <AddApplicationForm onAdd={handleAdd} />
       </div>
 
       {view === "analytics" ? (
         <AnalyticsView />
       ) : loading ? (
-        <p className="text-gray-400">Loading...</p>
+        <p className="text-muted dark:text-muted-dark">Loading...</p>
       ) : filtered.length === 0 ? (
-        <p className="text-gray-400">No applications yet.</p>
+        <p className="text-muted dark:text-muted-dark">No applications yet.</p>
       ) : view === "kanban" ? (
         <KanbanBoard
           applications={filtered}
@@ -204,7 +204,6 @@ function Dashboard() {
       )}
 
       <CommandPalette applications={applications} onSelectApplication={handleSelectApplication} />
-
     </AppShell>
   );
 }

@@ -109,6 +109,29 @@ router.get("/stats", async (req, res, next) => {
   }
 });
 
+router.get("/upcoming", async (req, res, next) => {
+  try {
+    const applications = await prisma.application.findMany({
+      where: {
+        userId: req.userId,
+        followUpDate: { not: null },
+      },
+      select: {
+        id: true,
+        company: true,
+        role: true,
+        status: true,
+        followUpDate: true,
+      },
+      orderBy: { followUpDate: "asc" },
+    });
+    res.json(applications);
+  } catch (err) {
+    logger.error({ err }, "Failed to fetch upcoming events");
+    next(err);
+  }
+});
+
 router.get("/", async (req, res, next) => {
   try {
     const applications = await prisma.application.findMany({
