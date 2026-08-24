@@ -45,7 +45,7 @@ function AnalyticsView() {
     };
   }, []);
 
-  if (loading) return <p className="text-gray-400">Loading analytics...</p>;
+  if (loading) return <p className="text-muted dark:text-muted-dark">Loading analytics...</p>;
   if (!stats) return null;
 
   const pieData = Object.entries(stats.statusCounts).map(([status, count]) => ({
@@ -63,8 +63,8 @@ function AnalyticsView() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+        <div className="bg-elevated dark:bg-elevated-dark border border-border-subtle dark:border-border-subtle-dark rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-ink dark:text-ink-dark mb-3">
             Applications per Week
           </h3>
           <ResponsiveContainer width="100%" height={220}>
@@ -72,15 +72,15 @@ function AnalyticsView() {
               <XAxis dataKey="week" stroke="#9ca3af" fontSize={12} />
               <YAxis stroke="#9ca3af" fontSize={12} allowDecimals={false} />
               <Tooltip
-                contentStyle={{ background: "#1f2937", border: "none", borderRadius: 8, color: "#fff" }}
+                contentStyle={{ background: "#1c1c26", border: "none", borderRadius: 8, color: "#fff" }}
               />
-              <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" fill="#6952e8" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+        <div className="bg-elevated dark:bg-elevated-dark border border-border-subtle dark:border-border-subtle-dark rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-ink dark:text-ink-dark mb-3">
             Status Breakdown
           </h3>
           <ResponsiveContainer width="100%" height={220}>
@@ -99,7 +99,7 @@ function AnalyticsView() {
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{ background: "#1f2937", border: "none", borderRadius: 8, color: "#fff" }}
+                contentStyle={{ background: "#1c1c26", border: "none", borderRadius: 8, color: "#fff" }}
               />
             </PieChart>
           </ResponsiveContainer>

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { Command } from "cmdk";
-import { Search, Building2, ExternalLink } from "lucide-react";
+import { Search, Building2 } from "lucide-react";
 import StatusBadge from "./ui/StatusBadge";
 
 function CommandPalette({ applications, onSelectApplication }) {
@@ -38,26 +38,26 @@ function CommandPalette({ applications, onSelectApplication }) {
       onClick={() => setOpen(false)}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 dark:border-gray-700"
+        className="bg-surface dark:bg-surface-dark rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border border-border-subtle dark:border-border-subtle-dark"
         onClick={(e) => e.stopPropagation()}
       >
         <Command shouldFilter={false}>
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-            <Search size={16} className="text-gray-400" />
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border-subtle dark:border-border-subtle-dark">
+            <Search size={16} className="text-muted dark:text-muted-dark" />
             <Command.Input
               autoFocus
               value={query}
               onValueChange={setQuery}
               placeholder="Search company, role, or tag..."
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder-gray-400"
+              className="flex-1 bg-transparent outline-none text-sm text-ink dark:text-ink-dark placeholder-muted dark:placeholder-muted-dark"
             />
-            <kbd className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+            <kbd className="text-xs text-muted dark:text-muted-dark bg-elevated dark:bg-elevated-dark px-1.5 py-0.5 rounded">
               Esc
             </kbd>
           </div>
           <Command.List className="max-h-80 overflow-y-auto p-2">
             {results.length === 0 && (
-              <p className="text-sm text-gray-400 text-center py-6">No applications found</p>
+              <p className="text-sm text-muted dark:text-muted-dark text-center py-6">No applications found</p>
             )}
             {results.map((app) => (
               <Command.Item
@@ -67,15 +67,15 @@ function CommandPalette({ applications, onSelectApplication }) {
                   setOpen(false);
                   setQuery("");
                 }}
-                className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg cursor-pointer data-[selected=true]:bg-gray-100 dark:data-[selected=true]:bg-gray-700"
+                className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg cursor-pointer data-[selected=true]:bg-elevated dark:data-[selected=true]:bg-elevated-dark"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <Building2 size={16} className="text-gray-400 flex-shrink-0" />
+                  <Building2 size={16} className="text-muted dark:text-muted-dark flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    <p className="text-sm font-medium text-ink dark:text-ink-dark truncate">
                       {app.company}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">{app.role}</p>
+                    <p className="text-xs text-muted dark:text-muted-dark truncate">{app.role}</p>
                   </div>
                 </div>
                 <StatusBadge status={app.status} />
