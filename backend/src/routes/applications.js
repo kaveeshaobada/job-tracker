@@ -67,12 +67,16 @@ router.get("/stats", async (req, res, next) => {
       select: { status: true, createdAt: true },
     });
 
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { weeklyGoal: true },
+    });
+
     const statusCounts = applications.reduce((acc, app) => {
       acc[app.status] = (acc[app.status] || 0) + 1;
       return acc;
     }, {});
 
-    // Applications per week, last 8 weeks
     const now = new Date();
     const weeklyBuckets = Array.from({ length: 8 }, (_, i) => {
       const weekStart = new Date(now);
@@ -96,12 +100,18 @@ router.get("/stats", async (req, res, next) => {
     const offers = statusCounts["Offer"] || 0;
     const offerRate = total > 0 ? Math.round((offers / total) * 100) : 0;
 
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(now.getDate() - 7);
+    const thisWeekCount = applications.filter((a) => new Date(a.createdAt) >= sevenDaysAgo).length;
+
     res.json({
       total,
       statusCounts,
       weeklyTrend: weeklyBuckets.map(({ week, count }) => ({ week, count })),
       responseRate,
       offerRate,
+      thisWeekCount,
+      weeklyGoal: user?.weeklyGoal || 5,
     });
   } catch (err) {
     logger.error({ err }, "Failed to fetch stats");
@@ -139,7 +149,21 @@ router.get("/", async (req, res, next) => {
       include: { tags: true, activityLogs: { orderBy: { createdAt: "desc" } }, attachments: true },
       orderBy: { createdAt: "desc" },
     });
-    res.json(applications);
+
+    const appIds = applications.map((a) => a.id);
+    const contacts = appIds.length
+      ? await prisma.contact.findMany({
+        where: { applicationId: { in: appIds }, userId: req.userId },
+        select: { id: true, name: true, role: true, email: true, applicationId: true },
+      })
+      : [];
+
+    const enriched = applications.map((a) => ({
+      ...a,
+      contacts: contacts.filter((c) => c.applicationId === a.id),
+    }));
+
+    res.json(enriched);
   } catch (err) {
     logger.error({ err }, "Failed to fetch applications");
     next(err);
@@ -268,7 +292,7 @@ router.delete("/:id/attachments/:attachmentId", async (req, res, next) => {
     if (attachment) {
       // Extract public_id from Cloudinary URL to delete the actual file too
       const publicId = attachment.url.split("/").slice(-2).join("/").split(".")[0];
-      await cloudinary.uploader.destroy(publicId, { resource_type: "raw" }).catch(() => {});
+      await cloudinary.uploader.destroy(publicId, { resource_type: "raw" }).catch(() => { });
     }
 
     await prisma.attachment.delete({ where: { id: Number(attachmentId) } });

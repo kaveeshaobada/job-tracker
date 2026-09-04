@@ -43,7 +43,7 @@ function AddApplicationForm({ onAdd }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg font-medium"
+        className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg font-medium whitespace-nowrap"
       >
         <Plus size={16} /> Add Application
       </button>

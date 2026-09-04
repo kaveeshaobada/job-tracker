@@ -3,11 +3,75 @@ import { Save } from "lucide-react";
 import api from "../api/client";
 import AppShell from "../components/AppShell";
 import toast from "react-hot-toast";
+import { useRef } from "react";
+import { Camera } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import heic2any from "heic2any";
+import AvatarCropModal from "../components/AvatarCropModal";
+
 
 function Settings() {
-  const [profile, setProfile] = useState({ name: "", targetRole: "", weeklyGoal: 5 });
+  const [profile, setProfile] = useState({ name: "", targetRole: "", weeklyGoal: 5, avatarUrl: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { updateUser } = useAuth();
+  const [cropSrc, setCropSrc] = useState(null);
+  const [viewingAvatar, setViewingAvatar] = useState(false);
+
+  const fileInputRef = useRef(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleFileSelect = async (e) => {
+    let file = e.target.files[0];
+    if (!file) return;
+
+    const isHeic =
+      file.type === "image/heic" ||
+      file.type === "image/heif" ||
+      file.name.toLowerCase().endsWith(".heic") ||
+      file.name.toLowerCase().endsWith(".heif");
+
+    if (isHeic) {
+      try {
+        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
+        file = new File([converted], file.name.replace(/\.(heic|heif)$/i, ".jpg"), {
+          type: "image/jpeg",
+        });
+      } catch {
+        toast.error("Couldn't process that HEIC image");
+        e.target.value = "";
+        return;
+      }
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => setCropSrc(reader.result);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleCropped = async (blob) => {
+    setCropSrc(null);
+    setUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append("avatar", blob, "avatar.jpg");
+    try {
+      const res = await api.post("/users/me/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setProfile(res.data);
+      updateUser({ avatarUrl: res.data.avatarUrl, name: res.data.name });
+      toast.success("Profile picture updated");
+    } catch {
+      toast.error("Failed to upload picture");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  function isHeicConversionError(err) {
+    return err?.message?.includes("format") || !err?.response;
+  }
 
   useEffect(() => {
     let ignore = false;
@@ -25,6 +89,7 @@ function Settings() {
     setSaving(true);
     try {
       await api.put("/users/me", profile);
+      updateUser({ name: profile.name });
       toast.success("Profile updated");
     } catch {
       toast.error("Failed to update profile");
@@ -48,6 +113,47 @@ function Settings() {
         <p className="text-sm text-muted dark:text-muted-dark mb-6">
           Personalize your job search profile
         </p>
+
+        <div className="flex items-center gap-4 mb-6">
+          <div className="relative">
+            <button
+              onClick={() => profile.avatarUrl && setViewingAvatar(true)}
+              className={profile.avatarUrl ? "cursor-pointer" : "cursor-default"}
+            >
+              {profile.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt="Profile"
+                  className="w-16 h-16 rounded-full object-cover border border-border-subtle dark:border-border-subtle-dark"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-elevated dark:bg-elevated-dark flex items-center justify-center text-xl font-semibold text-muted dark:text-muted-dark border border-border-subtle dark:border-border-subtle-dark">
+                  {profile.name?.[0]?.toUpperCase() || profile.email?.[0]?.toUpperCase() || "?"}
+                </div>
+              )}
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="absolute -bottom-1 -right-1 bg-accent hover:bg-accent-hover text-white p-1.5 rounded-full disabled:opacity-50"
+            >
+              <Camera size={12} />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </div>
+          <div>
+            <p className="text-sm font-medium">Profile Picture</p>
+            <p className="text-xs text-muted dark:text-muted-dark">
+              {uploadingAvatar ? "Uploading..." : "JPG, PNG, WEBP or HEIC, max 10MB"}
+            </p>
+          </div>
+        </div>
 
         <form onSubmit={handleSave} className="space-y-4">
           <div>
@@ -99,6 +205,21 @@ function Settings() {
           </button>
         </form>
       </div>
+      {cropSrc && (
+        <AvatarCropModal
+          imageSrc={cropSrc}
+          onClose={() => setCropSrc(null)}
+          onCropped={handleCropped}
+        />
+      )}
+      {viewingAvatar && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => setViewingAvatar(false)}
+        >
+          <img src={profile.avatarUrl} alt="Profile" className="max-w-sm max-h-[80vh] rounded-lg object-contain" />
+        </div>
+      )}
     </AppShell>
   );
 }

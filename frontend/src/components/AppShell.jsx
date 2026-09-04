@@ -10,6 +10,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { Sun, Moon } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 const navItems = [
   { to: "/", label: "Applications", icon: LayoutDashboard },
@@ -23,11 +25,12 @@ function AppShell({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const linkClass = ({ isActive }) =>
-    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-      isActive
-        ? "bg-accent/10 text-accent"
-        : "text-muted dark:text-muted-dark hover:bg-elevated dark:hover:bg-elevated-dark"
+    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
+      ? "bg-accent/10 text-accent"
+      : "text-muted dark:text-muted-dark hover:bg-elevated dark:hover:bg-elevated-dark"
     }`;
+
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <div className="min-h-screen flex bg-surface dark:bg-surface-dark text-ink dark:text-ink-dark">
@@ -41,9 +44,8 @@ function AppShell({ children }) {
 
       {/* Sidebar - desktop always visible, mobile as overlay */}
       <aside
-        className={`fixed md:sticky top-0 h-screen w-64 bg-elevated dark:bg-elevated-dark border-r border-border-subtle dark:border-border-subtle-dark flex flex-col p-4 z-50 transition-transform md:translate-x-0 ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed md:sticky top-0 h-screen w-64 bg-elevated dark:bg-elevated-dark border-r border-border-subtle dark:border-border-subtle-dark flex flex-col p-4 z-50 transition-transform md:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="flex items-center justify-between mb-6 px-1">
           <span className="font-bold text-lg">JobTrack</span>
@@ -67,10 +69,32 @@ function AppShell({ children }) {
           ))}
         </nav>
 
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted dark:text-muted-dark hover:bg-surface dark:hover:bg-surface-dark w-full mb-1"
+        >
+          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          {theme === "dark" ? "Light mode" : "Dark mode"}
+        </button>
+
         <div className="border-t border-border-subtle dark:border-border-subtle-dark pt-3 mt-3">
-          <p className="text-xs text-muted dark:text-muted-dark truncate px-3 mb-2">
-            {user?.email}
-          </p>
+          <div className="flex items-center gap-2 px-3 mb-2">
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt="Profile"
+                className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-accent/15 text-accent flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                {(user?.name?.[0] || user?.email?.[0] || "?").toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-xs font-medium truncate">{user?.name || "Set your name"}</p>
+              <p className="text-xs text-muted dark:text-muted-dark truncate">{user?.email}</p>
+            </div>
+          </div>
           <button
             onClick={logout}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted dark:text-muted-dark hover:bg-red-500/10 hover:text-red-500 w-full"

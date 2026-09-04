@@ -112,5 +112,93 @@ describe("Applications routes", () => {
 
       expect(res.status).toBe(204);
     });
+
+    describe("Tags", () => {
+      it("creates an application with tags", async () => {
+        const res = await request(app)
+          .post("/api/applications")
+          .set("Authorization", `Bearer ${tokenA}`)
+          .send({ company: "Meta", role: "SWE", tagNames: ["Referral", "Remote"] });
+
+        expect(res.status).toBe(201);
+        expect(res.body.tags.map((t) => t.name).sort()).toEqual(["Referral", "Remote"]);
+      });
+
+      it("updates an application's tags", async () => {
+        const create = await request(app)
+          .post("/api/applications")
+          .set("Authorization", `Bearer ${tokenA}`)
+          .send({ company: "Netflix", role: "SWE", tagNames: ["Dream company"] });
+
+        const res = await request(app)
+          .put(`/api/applications/${create.body.id}`)
+          .set("Authorization", `Bearer ${tokenA}`)
+          .send({ company: "Netflix", role: "SWE", status: "Applied", tagNames: ["Dream company", "Remote"] });
+
+        expect(res.status).toBe(200);
+        expect(res.body.tags.length).toBe(2);
+      });
+    });
+
+    describe("Notes (activity log)", () => {
+      let noteAppId;
+
+      beforeAll(async () => {
+        const res = await request(app)
+          .post("/api/applications")
+          .set("Authorization", `Bearer ${tokenA}`)
+          .send({ company: "Amazon", role: "SDE Intern" });
+        noteAppId = res.body.id;
+      });
+
+      it("adds a note to an application", async () => {
+        const res = await request(app)
+          .post(`/api/applications/${noteAppId}/notes`)
+          .set("Authorization", `Bearer ${tokenA}`)
+          .send({ content: "Recruiter screen went well" });
+
+        expect(res.status).toBe(201);
+        expect(res.body.content).toBe("Recruiter screen went well");
+      });
+
+      it("rejects an empty note", async () => {
+        const res = await request(app)
+          .post(`/api/applications/${noteAppId}/notes`)
+          .set("Authorization", `Bearer ${tokenA}`)
+          .send({ content: "" });
+
+        expect(res.status).toBe(400);
+      });
+
+      it("prevents a different user from adding a note to someone else's application", async () => {
+        const res = await request(app)
+          .post(`/api/applications/${noteAppId}/notes`)
+          .set("Authorization", `Bearer ${tokenB}`)
+          .send({ content: "Hacked note" });
+
+        expect(res.status).toBe(404);
+      });
+    });
+
+    describe("Stats and export", () => {
+      it("returns stats for the authenticated user", async () => {
+        const res = await request(app)
+          .get("/api/applications/stats")
+          .set("Authorization", `Bearer ${tokenA}`);
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty("total");
+        expect(res.body).toHaveProperty("weeklyGoal");
+      });
+
+      it("exports applications as CSV", async () => {
+        const res = await request(app)
+          .get("/api/applications/export")
+          .set("Authorization", `Bearer ${tokenA}`);
+
+        expect(res.status).toBe(200);
+        expect(res.headers["content-type"]).toContain("text/csv");
+      });
+    });
   });
 });

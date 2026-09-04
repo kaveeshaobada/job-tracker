@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { isPast, isToday, isThisWeek, format } from "date-fns";
-import { Clock, CalendarDays } from "lucide-react";
+import { Clock, CalendarDays, List, Grid3x3 } from "lucide-react";
 import api from "../api/client";
 import AppShell from "../components/AppShell";
 import StatusBadge from "../components/ui/StatusBadge";
 import CompanyLogo from "../components/ui/CompanyLogo";
+import CalendarGrid from "../components/CalendarGrid";
 import toast from "react-hot-toast";
 
 function groupEvents(events) {
@@ -56,6 +57,7 @@ function EventGroup({ title, events, accent }) {
 function Calendar() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState("list");
 
   useEffect(() => {
     let ignore = false;
@@ -77,11 +79,27 @@ function Calendar() {
 
   return (
     <AppShell>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Calendar</h1>
-        <p className="text-sm text-muted dark:text-muted-dark">
-          Follow-ups and interviews across all your applications
-        </p>
+      <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Calendar</h1>
+          <p className="text-sm text-muted dark:text-muted-dark">
+            Follow-ups and interviews across all your applications
+          </p>
+        </div>
+        <div className="flex bg-elevated dark:bg-elevated-dark rounded-lg p-1">
+          <button
+            onClick={() => setView("list")}
+            className={`p-1.5 rounded ${view === "list" ? "bg-surface dark:bg-surface-dark shadow-sm text-accent" : "text-muted dark:text-muted-dark"}`}
+          >
+            <List size={16} />
+          </button>
+          <button
+            onClick={() => setView("grid")}
+            className={`p-1.5 rounded ${view === "grid" ? "bg-surface dark:bg-surface-dark shadow-sm text-accent" : "text-muted dark:text-muted-dark"}`}
+          >
+            <Grid3x3 size={16} />
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -93,6 +111,8 @@ function Calendar() {
             No upcoming dates. Set a follow-up date when adding an application.
           </p>
         </div>
+      ) : view === "grid" ? (
+        <CalendarGrid events={events} />
       ) : (
         <>
           <EventGroup title="Overdue" events={groups.overdue} accent="text-red-500" />

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { GoogleLogin } from "@react-oauth/google";
 
 function Signup() {
   const [email, setEmail] = useState("");
@@ -17,11 +18,21 @@ function Signup() {
       const res = await api.post("/auth/signup", { email, password });
       login(res.data.token, res.data.user);
       navigate("/");
-      } catch (err) {
-          console.error(err);
-        setError(err.response?.data?.error || "Something went wrong");
-      }
-    };
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.error || "Something went wrong");
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const res = await api.post("/auth/google", { credential: credentialResponse.credential });
+      login(res.data.token, res.data.user);
+      navigate("/");
+    } catch {
+      setError("Google sign-in failed");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -59,6 +70,14 @@ function Signup() {
             Log in
           </Link>
         </p>
+        <div className="mt-4 flex items-center gap-3">
+          <div className="flex-1 h-px bg-border-subtle dark:bg-border-subtle-dark" />
+          <span className="text-xs text-muted dark:text-muted-dark">OR</span>
+          <div className="flex-1 h-px bg-border-subtle dark:bg-border-subtle-dark" />
+        </div>
+        <div className="mt-4 flex justify-center">
+          <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError("Google sign-in failed")} />
+        </div>
       </form>
     </div>
   );

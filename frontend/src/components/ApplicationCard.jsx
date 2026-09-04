@@ -7,14 +7,20 @@ import Badge from "./ui/Badge";
 import api from "../api/client";
 import toast from "react-hot-toast";
 import CompanyLogo from "./ui/CompanyLogo";
+import { Pencil } from "lucide-react";
+import EditApplicationForm from "./EditApplicationForm";
+import { Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const statusOptions = ["Applied", "OA", "Interview", "Offer", "Rejected"];
 
-function ApplicationCard({ app, onStatusChange, onDelete, onNoteAdded, onAttachmentAdded, onAttachmentDeleted }) {
+function ApplicationCard({ app, onStatusChange, onDelete, onNoteAdded, onAttachmentAdded, onAttachmentDeleted, onEdited }) {
   const [expanded, setExpanded] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [submittingNote, setSubmittingNote] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const navigate = useNavigate();
 
   const overdue = app.followUpDate && isPast(new Date(app.followUpDate));
 
@@ -86,7 +92,7 @@ function ApplicationCard({ app, onStatusChange, onDelete, onNoteAdded, onAttachm
                 </Badge>
               ))}
               {app.link && (
-               <a 
+                <a
                   href={app.link}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -112,6 +118,12 @@ function ApplicationCard({ app, onStatusChange, onDelete, onNoteAdded, onAttachm
             ))}
           </select>
           <StatusBadge status={app.status} />
+          <button
+            onClick={() => setEditing(true)}
+            className="text-muted dark:text-muted-dark hover:text-accent p-1"
+          >
+            <Pencil size={16} />
+          </button>
           <button
             onClick={() => onDelete(app.id)}
             className="text-muted dark:text-muted-dark hover:text-red-500 p-1"
@@ -186,6 +198,26 @@ function ApplicationCard({ app, onStatusChange, onDelete, onNoteAdded, onAttachm
               </label>
             </div>
 
+            {app.contacts?.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs font-medium text-muted dark:text-muted-dark mb-1.5 flex items-center gap-1">
+                  <Users size={12} /> Contacts
+                </p>
+                <div className="space-y-1">
+                  {app.contacts.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => navigate(`/contacts?highlight=${c.id}`)}
+                      className="w-full text-left text-sm bg-elevated dark:bg-elevated-dark hover:bg-surface dark:hover:bg-surface-dark rounded p-2"
+                    >
+                      <p className="text-ink dark:text-ink-dark">{c.name}</p>
+                      {c.role && <p className="text-xs text-muted dark:text-muted-dark">{c.role}</p>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleAddNote} className="flex gap-2">
               <input
                 type="text"
@@ -205,6 +237,9 @@ function ApplicationCard({ app, onStatusChange, onDelete, onNoteAdded, onAttachm
           </motion.div>
         )}
       </AnimatePresence>
+      {editing && (
+        <EditApplicationForm app={app} onClose={() => setEditing(false)} onUpdated={onEdited} />
+      )}
     </motion.div>
   );
 }

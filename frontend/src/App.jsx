@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Contacts from "./pages/Contacts";
 import Calendar from "./pages/Calendar";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -24,7 +25,7 @@ function AppRoutes() {
             <Settings />
           </ProtectedRoute>
         }
-    />
+      />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route
@@ -58,17 +59,18 @@ function AppRoutes() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
-          <AppRoutes />
-        </AuthProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <BrowserRouter>
+        <ThemeProvider>
+          <AuthProvider>
+            <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+            <AppRoutes />
+          </AuthProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </GoogleOAuthProvider>
   );
 }
-
 
 
 export default App;

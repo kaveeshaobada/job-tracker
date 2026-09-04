@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { GoogleLogin } from "@react-oauth/google";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -9,6 +10,16 @@ function Login() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const res = await api.post("/auth/google", { credential: credentialResponse.credential });
+      login(res.data.token, res.data.user);
+      navigate("/");
+    } catch {
+      setError("Google sign-in failed");
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,6 +70,14 @@ function Login() {
             Sign up
           </Link>
         </p>
+        <div className="mt-4 flex items-center gap-3">
+          <div className="flex-1 h-px bg-border-subtle dark:bg-border-subtle-dark" />
+          <span className="text-xs text-muted dark:text-muted-dark">OR</span>
+          <div className="flex-1 h-px bg-border-subtle dark:bg-border-subtle-dark" />
+        </div>
+        <div className="mt-4 flex justify-center">
+          <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError("Google sign-in failed")} />
+        </div>
       </form>
     </div>
   );

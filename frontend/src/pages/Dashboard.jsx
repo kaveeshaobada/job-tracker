@@ -9,6 +9,8 @@ import AnalyticsView from "../components/AnalyticsView";
 import { LayoutGrid, List, BarChart3, Download, Search } from "lucide-react";
 import CommandPalette from "../components/CommandPalette";
 import AppShell from "../components/AppShell";
+import WeeklyGoalBar from "../components/ui/WeeklyGoalBar";
+import { useSearchParams } from "react-router-dom";
 
 function Dashboard() {
   const { user } = useAuth();
@@ -16,6 +18,8 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
   const [view, setView] = useState("list");
+  const [goalStats, setGoalStats] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const handleExport = async () => {
     const res = await api.get("/applications/export", { responseType: "blob" });
@@ -27,12 +31,22 @@ function Dashboard() {
     window.URL.revokeObjectURL(url);
   };
 
+  const handleEdited = (updated) => {
+    setApplications((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+  };
+
   useEffect(() => {
     let ignore = false;
     async function load() {
       try {
-        const res = await api.get("/applications");
-        if (!ignore) setApplications(res.data);
+        const [appsRes, statsRes] = await Promise.all([
+          api.get("/applications"),
+          api.get("/applications/stats"),
+        ]);
+        if (!ignore) {
+          setApplications(appsRes.data);
+          setGoalStats(statsRes.data);
+        }
       } catch {
         if (!ignore) toast.error("Failed to load applications");
       } finally {
@@ -45,9 +59,18 @@ function Dashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    const highlightId = searchParams.get("highlight");
+    if (highlightId && applications.length > 0) {
+      handleSelectApplication(Number(highlightId));
+      setSearchParams({});
+    }
+  }, [applications, searchParams]);
+
   const handleAdd = async (data) => {
     const res = await api.post("/applications", data);
     setApplications((prev) => [res.data, ...prev]);
+    setGoalStats((prev) => prev && { ...prev, thisWeekCount: prev.thisWeekCount + 1 });
   };
 
   const handleStatusChange = async (id, status) => {
@@ -57,8 +80,18 @@ function Dashboard() {
   };
 
   const handleDelete = async (id) => {
+    const app = applications.find((a) => a.id === id);
     await api.delete(`/applications/${id}`);
     setApplications((prev) => prev.filter((a) => a.id !== id));
+
+    if (app) {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const wasThisWeek = new Date(app.createdAt) >= sevenDaysAgo;
+      if (wasThisWeek) {
+        setGoalStats((prev) => prev && { ...prev, thisWeekCount: Math.max(0, prev.thisWeekCount - 1) });
+      }
+    }
   };
 
   const handleNoteAdded = (appId, note) => {
@@ -114,17 +147,22 @@ function Dashboard() {
         </p>
       </div>
 
+      {goalStats && (
+        <div className="mb-4">
+          <WeeklyGoalBar current={goalStats.thisWeekCount} goal={goalStats.weeklyGoal} />
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible pb-1 -mx-1 px-1">
           {statuses.map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                filter === s
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${filter === s
                   ? "bg-accent text-white"
                   : "bg-elevated dark:bg-elevated-dark text-muted dark:text-muted-dark hover:text-ink dark:hover:text-ink-dark"
-              }`}
+                }`}
             >
               {s}
             </button>
@@ -198,6 +236,7 @@ function Dashboard() {
               onNoteAdded={handleNoteAdded}
               onAttachmentAdded={handleAttachmentAdded}
               onAttachmentDeleted={handleAttachmentDeleted}
+              onEdited={handleEdited}
             />
           ))}
         </div>

@@ -9,6 +9,48 @@ const { signupSchema, loginSchema } = require("../validators/authValidators");
 
 const router = express.Router();
 
+const { OAuth2Client } = require("google-auth-library");
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+router.post("/google", async (req, res, next) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({ error: "Missing Google credential" });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture } = payload;
+
+    let user = await prisma.user.findUnique({ where: { googleId } });
+
+    if (!user) {
+      // Check if an account with this email already exists (signed up normally)
+      const existingByEmail = await prisma.user.findUnique({ where: { email } });
+      if (existingByEmail) {
+        user = await prisma.user.update({
+          where: { email },
+          data: { googleId, name: existingByEmail.name || name, avatarUrl: existingByEmail.avatarUrl || picture },
+        });
+      } else {
+        user = await prisma.user.create({
+          data: { email, googleId, name, avatarUrl: picture },
+        });
+      }
+    }
+
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl } });
+  } catch (err) {
+    logger.error({ err }, "Google auth failed");
+    res.status(401).json({ error: "Google authentication failed" });
+  }
+});
+
 router.post("/signup", authLimiter, validate(signupSchema), async (req, res, next) => {
   try {
     const { email, password } = req.body;

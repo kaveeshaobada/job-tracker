@@ -15,7 +15,6 @@ function KanbanBoard({ applications, onStatusChange, onDelete }) {
     const appId = active.id;
     const newStatus = over.id;
 
-    // over.id could be a column id (status) or another card's id
     const targetStatus = statuses.includes(newStatus)
       ? newStatus
       : applications.find((a) => a.id === newStatus)?.status;
@@ -28,7 +27,7 @@ function KanbanBoard({ applications, onStatusChange, onDelete }) {
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {statuses.map((status) => (
           <KanbanColumn
             key={status}

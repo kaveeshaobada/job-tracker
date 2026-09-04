@@ -1,21 +1,33 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Mail, Building2, X } from "lucide-react";
 import api from "../api/client";
 import AppShell from "../components/AppShell";
 import toast from "react-hot-toast";
+import { Plus, Trash2, Mail, Building2, X, Pencil } from "lucide-react";
+import EditContactForm from "../components/EditContactForm";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 function Contacts() {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", role: "", company: "", email: "", notes: "" });
+  const [form, setForm] = useState({ name: "", role: "", company: "", email: "", notes: "", applicationId: "" });
+  const [applications, setApplications] = useState([]);
+  const navigate = useNavigate();
+  const [editingContact, setEditingContact] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const handleContactUpdated = (updated) => {
+    setContacts((prev) => prev.map((c) => (c.id === updated.id ? { ...updated, application: c.application } : c)));
+  };
 
   useEffect(() => {
     let ignore = false;
-    api
-      .get("/contacts")
-      .then((res) => {
-        if (!ignore) setContacts(res.data);
+    Promise.all([api.get("/contacts"), api.get("/applications")])
+      .then(([contactsRes, appsRes]) => {
+        if (!ignore) {
+          setContacts(contactsRes.data);
+          setApplications(appsRes.data);
+        }
       })
       .catch(() => toast.error("Failed to load contacts"))
       .finally(() => {
@@ -26,13 +38,32 @@ function Contacts() {
     };
   }, []);
 
+  useEffect(() => {
+    const highlightId = searchParams.get("highlight");
+    if (highlightId && contacts.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(`contact-${highlightId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("ring-2", "ring-accent");
+          setTimeout(() => el.classList.remove("ring-2", "ring-accent"), 1500);
+        }
+      }, 200);
+      setSearchParams({});
+    }
+  }, [contacts, searchParams]);
+
+
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
     try {
-      const res = await api.post("/contacts", form);
+      const res = await api.post("/contacts", {
+        ...form,
+        applicationId: form.applicationId || null,
+      });
       setContacts((prev) => [res.data, ...prev]);
-      setForm({ name: "", role: "", company: "", email: "", notes: "" });
+      setForm({ name: "", role: "", company: "", email: "", notes: "", applicationId: "" });
       setFormOpen(false);
       toast.success("Contact added");
     } catch {
@@ -56,7 +87,7 @@ function Contacts() {
         </div>
         <button
           onClick={() => setFormOpen(true)}
-          className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2.5 rounded-lg font-medium"
+          className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2.5 rounded-lg font-medium whitespace-nowrap"
         >
           <Plus size={16} /> Add Contact
         </button>
@@ -105,6 +136,18 @@ function Contacts() {
               className="p-2.5 rounded-lg bg-surface dark:bg-surface-dark border border-border-subtle dark:border-border-subtle-dark focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
+          <select
+            value={form.applicationId}
+            onChange={(e) => setForm({ ...form, applicationId: e.target.value })}
+            className="w-full p-2.5 rounded-lg bg-surface dark:bg-surface-dark border border-border-subtle dark:border-border-subtle-dark focus:outline-none focus:ring-2 focus:ring-accent mb-3"
+          >
+            <option value="">Not linked to an application</option>
+            {applications.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.company} — {a.role}
+              </option>
+            ))}
+          </select>
           <textarea
             placeholder="Notes (how you met, what you discussed...)"
             value={form.notes}
@@ -132,22 +175,32 @@ function Contacts() {
           {contacts.map((c) => (
             <div
               key={c.id}
+              id={`contact-${c.id}`}
               className="bg-elevated dark:bg-elevated-dark border border-border-subtle dark:border-border-subtle-dark rounded-xl p-4"
             >
               <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h3 className="font-semibold">{c.name}</h3>
+                <div className="min-w-0">
+                  <h3 className="font-semibold truncate">{c.name}</h3>
                   {c.role && (
-                    <p className="text-sm text-muted dark:text-muted-dark">{c.role}</p>
+                    <p className="text-sm text-muted dark:text-muted-dark truncate">{c.role}</p>
                   )}
                 </div>
-                <button
-                  onClick={() => handleDelete(c.id)}
-                  className="text-muted dark:text-muted-dark hover:text-red-500"
-                >
-                  <Trash2 size={14} />
-                </button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => setEditingContact(c)}
+                    className="text-muted dark:text-muted-dark hover:text-accent p-1"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(c.id)}
+                    className="text-muted dark:text-muted-dark hover:text-red-500 p-1"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
+
               {c.company && (
                 <p className="text-xs flex items-center gap-1.5 text-muted dark:text-muted-dark mb-1">
                   <Building2 size={12} /> {c.company}
@@ -161,6 +214,14 @@ function Contacts() {
                   <Mail size={12} /> {c.email}
                 </a>
               )}
+              {c.application && (
+                <button
+                  onClick={() => navigate(`/?highlight=${c.applicationId}`)}
+                  className="text-xs flex items-center gap-1.5 text-accent hover:underline mt-1"
+                >
+                  <Building2 size={12} /> {c.application.company} — {c.application.role}
+                </button>
+              )}
               {c.notes && (
                 <p className="text-sm text-muted dark:text-muted-dark mt-2 border-t border-border-subtle dark:border-border-subtle-dark pt-2">
                   {c.notes}
@@ -169,6 +230,15 @@ function Contacts() {
             </div>
           ))}
         </div>
+      )}
+
+      {editingContact && (
+        <EditContactForm
+          contact={editingContact}
+          applications={applications}
+          onClose={() => setEditingContact(null)}
+          onUpdated={handleContactUpdated}
+        />
       )}
     </AppShell>
   );
