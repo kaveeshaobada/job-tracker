@@ -13,6 +13,7 @@ const userRoutes = require("./routes/users");
 const contactRoutes = require("./routes/contacts");
 
 const app = express();
+app.set("trust proxy", 1);
 
 app.use(helmet());
 app.use(
