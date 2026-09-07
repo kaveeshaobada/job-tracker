@@ -7,6 +7,7 @@ import StatusBadge from "../components/ui/StatusBadge";
 import CompanyLogo from "../components/ui/CompanyLogo";
 import CalendarGrid from "../components/CalendarGrid";
 import toast from "react-hot-toast";
+import { useOnboarding } from "../context/OnboardingContext";
 
 function groupEvents(events) {
   const groups = { overdue: [], today: [], thisWeek: [], later: [] };
@@ -55,6 +56,7 @@ function EventGroup({ title, events, accent }) {
 }
 
 function Calendar() {
+  const { isDemoActive, demoData } = useOnboarding() || {};
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("list");
@@ -75,7 +77,16 @@ function Calendar() {
     };
   }, []);
 
-  const groups = groupEvents(events);
+  useEffect(() => {
+    const handleSetCalendarView = (e) => {
+      if (e.detail) setView(e.detail);
+    };
+    window.addEventListener("jobtrack-set-calendar-view", handleSetCalendarView);
+    return () => window.removeEventListener("jobtrack-set-calendar-view", handleSetCalendarView);
+  }, []);
+
+  const activeEvents = (isDemoActive && events.length === 0) ? (demoData?.calendarEvents || []) : events;
+  const groups = groupEvents(activeEvents);
 
   return (
     <AppShell>
@@ -89,12 +100,14 @@ function Calendar() {
         <div className="flex bg-elevated dark:bg-elevated-dark rounded-lg p-1">
           <button
             onClick={() => setView("list")}
+            data-tour="calendar-view-list"
             className={`p-1.5 rounded ${view === "list" ? "bg-surface dark:bg-surface-dark shadow-sm text-accent" : "text-muted dark:text-muted-dark"}`}
           >
             <List size={16} />
           </button>
           <button
             onClick={() => setView("grid")}
+            data-tour="calendar-view-grid"
             className={`p-1.5 rounded ${view === "grid" ? "bg-surface dark:bg-surface-dark shadow-sm text-accent" : "text-muted dark:text-muted-dark"}`}
           >
             <Grid3x3 size={16} />
@@ -102,25 +115,27 @@ function Calendar() {
         </div>
       </div>
 
-      {loading ? (
-        <p className="text-muted dark:text-muted-dark">Loading...</p>
-      ) : events.length === 0 ? (
-        <div className="text-center py-12">
-          <CalendarDays size={32} className="mx-auto text-muted dark:text-muted-dark mb-2" />
-          <p className="text-muted dark:text-muted-dark">
-            No upcoming dates. Set a follow-up date when adding an application.
-          </p>
-        </div>
-      ) : view === "grid" ? (
-        <CalendarGrid events={events} />
-      ) : (
-        <>
-          <EventGroup title="Overdue" events={groups.overdue} accent="text-red-500" />
-          <EventGroup title="Today" events={groups.today} accent="text-accent" />
-          <EventGroup title="This Week" events={groups.thisWeek} accent="text-yellow-500" />
-          <EventGroup title="Later" events={groups.later} accent="text-muted dark:text-muted-dark" />
-        </>
-      )}
+      <div data-tour="calendar-view">
+        {loading ? (
+          <p className="text-muted dark:text-muted-dark">Loading...</p>
+        ) : activeEvents.length === 0 ? (
+          <div className="text-center py-12">
+            <CalendarDays size={32} className="mx-auto text-muted dark:text-muted-dark mb-2" />
+            <p className="text-muted dark:text-muted-dark">
+              No upcoming dates. Set a follow-up date when adding an application.
+            </p>
+          </div>
+        ) : view === "grid" ? (
+          <CalendarGrid events={activeEvents} />
+        ) : (
+          <>
+            <EventGroup title="Overdue" events={groups.overdue} accent="text-red-500" />
+            <EventGroup title="Today" events={groups.today} accent="text-accent" />
+            <EventGroup title="This Week" events={groups.thisWeek} accent="text-yellow-500" />
+            <EventGroup title="Later" events={groups.later} accent="text-muted dark:text-muted-dark" />
+          </>
+        )}
+      </div>
     </AppShell>
   );
 }

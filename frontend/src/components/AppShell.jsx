@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -8,21 +8,37 @@ import {
   Menu,
   X,
   LogOut,
+  HelpCircle,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { useOnboarding } from "../context/OnboardingContext";
 
 const navItems = [
-  { to: "/", label: "Applications", icon: LayoutDashboard },
-  { to: "/contacts", label: "Contacts", icon: Users },
-  { to: "/calendar", label: "Calendar", icon: Calendar },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/", label: "Applications", icon: LayoutDashboard, tourKey: "nav-applications" },
+  { to: "/contacts", label: "Contacts", icon: Users, tourKey: "nav-contacts" },
+  { to: "/calendar", label: "Calendar", icon: Calendar, tourKey: "nav-calendar" },
+  { to: "/settings", label: "Settings", icon: Settings, tourKey: "nav-settings" },
 ];
 
 function AppShell({ children }) {
   const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { startTour, isActive, nextStep } = useOnboarding();
+
+  useEffect(() => {
+    const handleOpenMenu = () => setMobileOpen(true);
+    const handleCloseMenu = () => setMobileOpen(false);
+
+    window.addEventListener("jobtrack-open-mobile-menu", handleOpenMenu);
+    window.addEventListener("jobtrack-close-mobile-menu", handleCloseMenu);
+
+    return () => {
+      window.removeEventListener("jobtrack-open-mobile-menu", handleOpenMenu);
+      window.removeEventListener("jobtrack-close-mobile-menu", handleCloseMenu);
+    };
+  }, []);
 
   const linkClass = ({ isActive }) =>
     `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
@@ -44,8 +60,9 @@ function AppShell({ children }) {
 
       {/* Sidebar - desktop always visible, mobile as overlay */}
       <aside
-        className={`fixed md:sticky top-0 h-screen w-64 bg-elevated dark:bg-elevated-dark border-r border-border-subtle dark:border-border-subtle-dark flex flex-col p-4 z-50 transition-transform md:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`fixed md:sticky top-0 h-screen w-64 bg-elevated dark:bg-elevated-dark border-r border-border-subtle dark:border-border-subtle-dark flex flex-col p-4 transition-transform md:translate-x-0 z-50 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         <div className="flex items-center justify-between mb-6 px-1">
           <span className="font-bold text-lg">JobTrack</span>
@@ -61,6 +78,7 @@ function AppShell({ children }) {
               to={item.to}
               end={item.to === "/"}
               className={linkClass}
+              data-tour={item.tourKey}
               onClick={() => setMobileOpen(false)}
             >
               <item.icon size={18} />
@@ -70,8 +88,20 @@ function AppShell({ children }) {
         </nav>
 
         <button
+          onClick={() => {
+            setMobileOpen(false);
+            startTour();
+          }}
+          data-tour="restart-tour"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted dark:text-muted-dark hover:bg-surface dark:hover:bg-surface-dark w-full mb-1 transition-colors"
+        >
+          <HelpCircle size={18} />
+          Take Tour
+        </button>
+
+        <button
           onClick={toggleTheme}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted dark:text-muted-dark hover:bg-surface dark:hover:bg-surface-dark w-full mb-1"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted dark:text-muted-dark hover:bg-surface dark:hover:bg-surface-dark w-full mb-1 transition-colors"
         >
           {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           {theme === "dark" ? "Light mode" : "Dark mode"}

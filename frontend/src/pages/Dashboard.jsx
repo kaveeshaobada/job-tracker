@@ -10,16 +10,26 @@ import { LayoutGrid, List, BarChart3, Download, Search } from "lucide-react";
 import CommandPalette from "../components/CommandPalette";
 import AppShell from "../components/AppShell";
 import WeeklyGoalBar from "../components/ui/WeeklyGoalBar";
+import { useOnboarding } from "../context/OnboardingContext";
 import { useSearchParams } from "react-router-dom";
 
 function Dashboard() {
   const { user } = useAuth();
+  const { isDemoActive, demoData } = useOnboarding() || {};
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
   const [view, setView] = useState("list");
   const [goalStats, setGoalStats] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const handleSetView = (e) => {
+      if (e.detail) setView(e.detail);
+    };
+    window.addEventListener("jobtrack-set-dashboard-view", handleSetView);
+    return () => window.removeEventListener("jobtrack-set-dashboard-view", handleSetView);
+  }, []);
 
   const handleExport = async () => {
     const res = await api.get("/applications/export", { responseType: "blob" });
@@ -133,8 +143,11 @@ function Dashboard() {
     }, 250);
   };
 
+  const activeApps = (isDemoActive && applications.length === 0) ? demoData.applications : applications;
+  const activeGoalStats = (isDemoActive && (!goalStats || applications.length === 0)) ? demoData.goalStats : goalStats;
+
   const filtered =
-    filter === "All" ? applications : applications.filter((a) => a.status === filter);
+    filter === "All" ? activeApps : activeApps.filter((a) => a.status === filter);
 
   const statuses = ["All", "Applied", "OA", "Interview", "Offer", "Rejected"];
 
@@ -143,13 +156,13 @@ function Dashboard() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Welcome back{user?.name ? `, ${user.name}` : ""}</h1>
         <p className="text-sm text-muted dark:text-muted-dark">
-          {applications.length} application{applications.length !== 1 ? "s" : ""} tracked
+          {activeApps.length} application{activeApps.length !== 1 ? "s" : ""} tracked
         </p>
       </div>
 
-      {goalStats && (
+      {activeGoalStats && (
         <div className="mb-4">
-          <WeeklyGoalBar current={goalStats.thisWeekCount} goal={goalStats.weeklyGoal} />
+          <WeeklyGoalBar current={activeGoalStats.thisWeekCount} goal={activeGoalStats.weeklyGoal} />
         </div>
       )}
 
@@ -173,18 +186,21 @@ function Dashboard() {
           <div className="flex bg-elevated dark:bg-elevated-dark rounded-lg p-1">
             <button
               onClick={() => setView("list")}
+              data-tour="view-list"
               className={`p-1.5 rounded ${view === "list" ? "bg-surface dark:bg-surface-dark shadow-sm text-accent" : "text-muted dark:text-muted-dark"}`}
             >
               <List size={16} />
             </button>
             <button
               onClick={() => setView("kanban")}
+              data-tour="view-kanban"
               className={`p-1.5 rounded ${view === "kanban" ? "bg-surface dark:bg-surface-dark shadow-sm text-accent" : "text-muted dark:text-muted-dark"}`}
             >
               <LayoutGrid size={16} />
             </button>
             <button
               onClick={() => setView("analytics")}
+              data-tour="view-analytics"
               className={`p-1.5 rounded ${view === "analytics" ? "bg-surface dark:bg-surface-dark shadow-sm text-accent" : "text-muted dark:text-muted-dark"}`}
             >
               <BarChart3 size={16} />
@@ -209,7 +225,9 @@ function Dashboard() {
             <Download size={16} />
           </button>
 
-          <AddApplicationForm onAdd={handleAdd} />
+          <div data-tour="add-application">
+            <AddApplicationForm onAdd={handleAdd} />
+          </div>
         </div>
       </div>
 
@@ -226,7 +244,7 @@ function Dashboard() {
           onDelete={handleDelete}
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3" data-tour="app-card">
           {filtered.map((app) => (
             <ApplicationCard
               key={app.id}
@@ -242,7 +260,7 @@ function Dashboard() {
         </div>
       )}
 
-      <CommandPalette applications={applications} onSelectApplication={handleSelectApplication} />
+      <CommandPalette applications={activeApps} onSelectApplication={handleSelectApplication} />
     </AppShell>
   );
 }

@@ -5,8 +5,10 @@ import toast from "react-hot-toast";
 import { Plus, Trash2, Mail, Building2, X, Pencil } from "lucide-react";
 import EditContactForm from "../components/EditContactForm";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useOnboarding } from "../context/OnboardingContext";
 
 function Contacts() {
+  const { isDemoActive, demoData } = useOnboarding() || {};
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
@@ -76,6 +78,9 @@ function Contacts() {
     setContacts((prev) => prev.filter((c) => c.id !== id));
   };
 
+  const activeContacts = (isDemoActive && contacts.length === 0) ? demoData.contacts : contacts;
+  const activeApplications = (isDemoActive && applications.length === 0) ? demoData.applications : applications;
+
   return (
     <AppShell>
       <div className="flex justify-between items-center mb-6">
@@ -87,6 +92,7 @@ function Contacts() {
         </div>
         <button
           onClick={() => setFormOpen(true)}
+          data-tour="add-contact"
           className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2.5 rounded-lg font-medium whitespace-nowrap"
         >
           <Plus size={16} /> Add Contact
@@ -142,7 +148,7 @@ function Contacts() {
             className="w-full p-2.5 rounded-lg bg-surface dark:bg-surface-dark border border-border-subtle dark:border-border-subtle-dark focus:outline-none focus:ring-2 focus:ring-accent mb-3"
           >
             <option value="">Not linked to an application</option>
-            {applications.map((a) => (
+            {activeApplications.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.company} — {a.role}
               </option>
@@ -166,13 +172,13 @@ function Contacts() {
 
       {loading ? (
         <p className="text-muted dark:text-muted-dark">Loading...</p>
-      ) : contacts.length === 0 ? (
+      ) : activeContacts.length === 0 ? (
         <p className="text-muted dark:text-muted-dark">
           No contacts yet — add recruiters or referrals you've connected with.
         </p>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {contacts.map((c) => (
+          {activeContacts.map((c) => (
             <div
               key={c.id}
               id={`contact-${c.id}`}

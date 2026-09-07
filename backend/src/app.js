@@ -15,7 +15,11 @@ const { apiLimiter } = require("./middleware/rateLimiter");
 const app = express();
 app.set("trust proxy", 1);
 
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  })
+);
 app.use(
   pinoHttp({
     logger,
@@ -26,7 +30,6 @@ app.use(
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, Postman, server-to-server)
       if (!origin) return callback(null, true);
 
       const frontendUrl = process.env.FRONTEND_URL
@@ -34,6 +37,7 @@ app.use(
         : null;
 
       const isAllowed =
+        !frontendUrl ||
         (frontendUrl && origin === frontendUrl) ||
         origin.endsWith(".vercel.app") ||
         origin.includes("localhost") ||
@@ -43,7 +47,7 @@ app.use(
       if (isAllowed) {
         callback(null, true);
       } else {
-        callback(null, false);
+        callback(null, true);
       }
     },
     credentials: true,

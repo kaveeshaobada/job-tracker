@@ -4,26 +4,42 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("user");
-    return stored ? JSON.parse(stored) : null;
+    try {
+      const stored = localStorage.getItem("user");
+      return stored && stored !== "undefined" ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
   });
 
   const login = (token, userData) => {
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(userData));
+    try {
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(userData));
+    } catch {
+      // Storage unavailable or quota exceeded
+    }
     setUser(userData);
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    try {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    } catch {
+      // Storage unavailable
+    }
     setUser(null);
   };
 
   const updateUser = (updates) => {
     setUser((prev) => {
       const next = { ...prev, ...updates };
-      localStorage.setItem("user", JSON.stringify(next));
+      try {
+        localStorage.setItem("user", JSON.stringify(next));
+      } catch {
+        // Storage unavailable
+      }
       return next;
     });
   };

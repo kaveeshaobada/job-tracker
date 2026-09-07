@@ -1,5 +1,7 @@
 const rateLimit = require("express-rate-limit");
 
+const skipInTest = () => process.env.NODE_ENV === "test";
+
 // Strict limiter for auth routes — prevents brute-force attacks
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -7,6 +9,7 @@ const authLimiter = rateLimit({
   message: { error: "Too many attempts, please try again later" },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTest,
 });
 
 // General limiter for the whole API
@@ -15,6 +18,7 @@ const apiLimiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTest,
 });
 
 module.exports = { authLimiter, apiLimiter };
