@@ -69,8 +69,8 @@ function ApplicationCard({ app, onStatusChange, onDelete, onNoteAdded, onAttachm
       exit={{ opacity: 0, scale: 0.96 }}
       className="bg-elevated dark:bg-elevated-dark border border-border-subtle dark:border-border-subtle-dark rounded-xl overflow-hidden"
     >
-      <div className="p-4 flex justify-between items-start gap-4">
-        <div className="flex-1 min-w-0 flex gap-3">
+      <div className="p-3 sm:p-4 flex justify-between items-start gap-3 sm:gap-4">
+        <div className="flex-1 min-w-0 flex gap-2.5 sm:gap-3">
           <CompanyLogo company={app.company} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -78,14 +78,14 @@ function ApplicationCard({ app, onStatusChange, onDelete, onNoteAdded, onAttachm
                 {app.company}
               </h3>
               {overdue && (
-                <span className="flex items-center gap-1 text-xs text-red-500 font-medium">
+                <span className="flex items-center gap-1 text-xs text-red-500 font-medium whitespace-nowrap">
                   <Clock size={12} /> Follow up
                 </span>
               )}
             </div>
-            <p className="text-muted dark:text-muted-dark text-sm">{app.role}</p>
+            <p className="text-muted dark:text-muted-dark text-sm truncate">{app.role}</p>
 
-            <div className="flex items-center gap-2 flex-wrap mt-2">
+            <div className="flex items-center gap-2 flex-wrap mt-1.5 sm:mt-2">
               {app.tags?.map((tag) => (
                 <Badge key={tag.id} color={tag.color}>
                   {tag.name}
@@ -105,39 +105,36 @@ function ApplicationCard({ app, onStatusChange, onDelete, onNoteAdded, onAttachm
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <select
-            value={app.status}
-            onChange={(e) => onStatusChange(app.id, e.target.value)}
-            className="bg-transparent border-none text-xs cursor-pointer text-ink dark:text-ink-dark"
-          >
-            {statusOptions.map((s) => (
-              <option key={s} value={s} className="text-black">
-                {s}
-              </option>
-            ))}
-          </select>
-          <StatusBadge status={app.status} />
-          <button
-            onClick={() => setEditing(true)}
-            className="text-muted dark:text-muted-dark hover:text-accent p-1"
-          >
-            <Pencil size={16} />
-          </button>
-          <button
-            onClick={() => onDelete(app.id)}
-            className="text-muted dark:text-muted-dark hover:text-red-500 p-1"
-          >
-            <Trash2 size={16} />
-          </button>
-          <button
-            onClick={() => setExpanded((e) => !e)}
-            className="text-muted dark:text-muted-dark hover:text-ink dark:hover:text-ink-dark p-1"
-          >
-            <motion.div animate={{ rotate: expanded ? 180 : 0 }}>
-              <ChevronDown size={18} />
-            </motion.div>
-          </button>
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <StatusBadge
+            status={app.status}
+            onChange={(newStatus) => onStatusChange(app.id, newStatus)}
+          />
+          <div className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1">
+            <button
+              onClick={() => setEditing(true)}
+              className="text-muted dark:text-muted-dark hover:text-accent p-1 transition-colors"
+              title="Edit"
+            >
+              <Pencil size={15} />
+            </button>
+            <button
+              onClick={() => onDelete(app.id)}
+              className="text-muted dark:text-muted-dark hover:text-red-500 p-1 transition-colors"
+              title="Delete"
+            >
+              <Trash2 size={15} />
+            </button>
+            <button
+              onClick={() => setExpanded((e) => !e)}
+              className="text-muted dark:text-muted-dark hover:text-ink dark:hover:text-ink-dark p-1 transition-colors"
+              title="Expand"
+            >
+              <motion.div animate={{ rotate: expanded ? 180 : 0 }}>
+                <ChevronDown size={17} />
+              </motion.div>
+            </button>
+          </div>
         </div>
       </div>
 
