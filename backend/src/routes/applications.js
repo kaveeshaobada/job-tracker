@@ -6,6 +6,7 @@ const validate = require("../middleware/validate");
 const { applicationSchema, activityLogSchema } = require("../validators/applicationValidators");
 const upload = require("../middleware/upload");
 const cloudinary = require("../cloudinary");
+const { handleApplicationDateChange } = require("../services/reminderService");
 
 const router = express.Router();
 
@@ -183,6 +184,11 @@ router.post("/", validate(applicationSchema), async (req, res, next) => {
       },
       include: { tags: true, activityLogs: { orderBy: { createdAt: "desc" } }, attachments: true },
     });
+
+    if (application.followUpDate) {
+      handleApplicationDateChange(application.id, application.followUpDate).catch(() => {});
+    }
+
     res.status(201).json(application);
   } catch (err) {
     logger.error({ err }, "Failed to create application");
@@ -210,6 +216,9 @@ router.put("/:id", validate(applicationSchema), async (req, res, next) => {
       },
       include: { tags: true, activityLogs: { orderBy: { createdAt: "desc" } }, attachments: true },
     });
+
+    handleApplicationDateChange(updated.id, updated.followUpDate).catch(() => {});
+
     res.json(updated);
   } catch (err) {
     logger.error({ err }, "Failed to update application");
@@ -227,6 +236,9 @@ router.delete("/:id", async (req, res, next) => {
     }
 
     await prisma.application.delete({ where: { id: Number(id) } });
+
+    handleApplicationDateChange(Number(id), null).catch(() => {});
+
     res.status(204).send();
   } catch (err) {
     logger.error({ err }, "Failed to delete application");

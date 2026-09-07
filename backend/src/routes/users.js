@@ -13,7 +13,7 @@ router.get("/me", async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      select: { id: true, email: true, name: true, targetRole: true, weeklyGoal: true, avatarUrl: true },
+      select: { id: true, email: true, name: true, targetRole: true, weeklyGoal: true, remindersEnabled: true, avatarUrl: true },
     });
     res.json(user);
   } catch (err) {
@@ -27,7 +27,7 @@ router.put("/me", validate(updateProfileSchema), async (req, res, next) => {
     const user = await prisma.user.update({
       where: { id: req.userId },
       data: req.body,
-      select: { id: true, email: true, name: true, targetRole: true, weeklyGoal: true, avatarUrl: true },
+      select: { id: true, email: true, name: true, targetRole: true, weeklyGoal: true, remindersEnabled: true, avatarUrl: true },
     });
     res.json(user);
   } catch (err) {
@@ -44,7 +44,7 @@ router.post("/me/avatar", uploadAvatar.single("avatar"), async (req, res, next) 
     const user = await prisma.user.update({
       where: { id: req.userId },
       data: { avatarUrl: req.file.path },
-      select: { id: true, email: true, name: true, targetRole: true, weeklyGoal: true, avatarUrl: true },
+      select: { id: true, email: true, name: true, targetRole: true, weeklyGoal: true, remindersEnabled: true, avatarUrl: true },
     });
     res.json(user);
   } catch (err) {

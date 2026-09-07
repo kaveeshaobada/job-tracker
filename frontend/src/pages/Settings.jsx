@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Save } from "lucide-react";
+import { Save, Bell } from "lucide-react";
 import api from "../api/client";
 import AppShell from "../components/AppShell";
 import toast from "react-hot-toast";
@@ -11,7 +11,7 @@ import AvatarCropModal from "../components/AvatarCropModal";
 
 
 function Settings() {
-  const [profile, setProfile] = useState({ name: "", targetRole: "", weeklyGoal: 5, avatarUrl: "" });
+  const [profile, setProfile] = useState({ name: "", targetRole: "", weeklyGoal: 5, remindersEnabled: true, avatarUrl: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { updateUser } = useAuth();
@@ -193,6 +193,29 @@ function Settings() {
             <p className="text-xs text-muted dark:text-muted-dark mt-1">
               Used to track your weekly progress on the dashboard
             </p>
+          </div>
+
+          <div className="pt-3 border-t border-border-subtle dark:border-border-subtle-dark">
+            <h2 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <Bell size={16} className="text-accent" /> Notification Preferences
+            </h2>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-elevated dark:bg-elevated-dark border border-border-subtle dark:border-border-subtle-dark">
+              <div>
+                <p className="text-sm font-medium">Date Reminder Notifications</p>
+                <p className="text-xs text-muted dark:text-muted-dark">
+                  Receive automatic reminders 7 days and 1 day before application follow-up dates
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-4">
+                <input
+                  type="checkbox"
+                  checked={profile.remindersEnabled ?? true}
+                  onChange={(e) => setProfile({ ...profile, remindersEnabled: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-surface dark:bg-surface-dark peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent border border-border-subtle dark:border-border-subtle-dark"></div>
+              </label>
+            </div>
           </div>
 
           <button

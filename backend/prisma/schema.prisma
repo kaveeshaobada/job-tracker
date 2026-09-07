@@ -7,35 +7,38 @@ datasource db {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  email        String        @unique
-  password     String?
-  googleId     String?       @unique
-  name         String?
-  avatarUrl    String?
-  targetRole   String?
-  weeklyGoal   Int           @default(5)
-  createdAt    DateTime      @default(now())
-  applications Application[]
-  contacts     Contact[]
+  id               Int            @id @default(autoincrement())
+  email            String         @unique
+  password         String?
+  googleId         String?        @unique
+  name             String?
+  avatarUrl        String?
+  targetRole       String?
+  weeklyGoal       Int            @default(5)
+  remindersEnabled Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  applications     Application[]
+  contacts         Contact[]
+  notifications    Notification[]
 }
 
 model Application {
-  id            Int           @id @default(autoincrement())
+  id            Int            @id @default(autoincrement())
   company       String
   role          String
-  status        String        @default("Applied")
-  dateApplied   DateTime      @default(now())
+  status        String         @default("Applied")
+  dateApplied   DateTime       @default(now())
   link          String?
-  notes         String?       // legacy field, kept for backward compatibility
+  notes         String?        // legacy field, kept for backward compatibility
   followUpDate  DateTime?
   userId        Int
-  user          User          @relation(fields: [userId], references: [id])
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @default(now()) @updatedAt
+  user          User           @relation(fields: [userId], references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @default(now()) @updatedAt
   tags          Tag[]
   activityLogs  ActivityLog[]
   attachments   Attachment[]
+  notifications Notification[]
 }
 
 model Tag {
@@ -73,4 +76,20 @@ model Contact {
   userId        Int
   user          User      @relation(fields: [userId], references: [id])
   createdAt     DateTime  @default(now())
+}
+
+model Notification {
+  id            Int          @id @default(autoincrement())
+  userId        Int
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applicationId Int?
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  title         String
+  message       String
+  type          String
+  eventDate     DateTime
+  isRead        Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+
+  @@unique([applicationId, type, eventDate])
 }

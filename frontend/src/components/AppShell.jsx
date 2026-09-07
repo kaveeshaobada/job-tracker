@@ -14,6 +14,7 @@ import { useAuth } from "../context/AuthContext";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useOnboarding } from "../context/OnboardingContext";
+import NotificationBell from "./NotificationBell";
 
 const navItems = [
   { to: "/", label: "Applications", icon: LayoutDashboard, tourKey: "nav-applications" },
@@ -53,9 +54,12 @@ function AppShell({ children }) {
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-surface dark:bg-surface-dark border-b border-border-subtle dark:border-border-subtle-dark flex items-center justify-between px-4 z-40">
         <span className="font-semibold">JobTrack</span>
-        <button onClick={() => setMobileOpen(true)}>
-          <Menu size={22} />
-        </button>
+        <div className="flex items-center gap-2">
+          <NotificationBell align="right" />
+          <button onClick={() => setMobileOpen(true)}>
+            <Menu size={22} />
+          </button>
+        </div>
       </div>
 
       {/* Sidebar - desktop always visible, mobile as overlay */}
@@ -66,9 +70,12 @@ function AppShell({ children }) {
       >
         <div className="flex items-center justify-between mb-6 px-1">
           <span className="font-bold text-lg">JobTrack</span>
-          <button className="md:hidden" onClick={() => setMobileOpen(false)}>
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBell align="left" />
+            <button className="md:hidden" onClick={() => setMobileOpen(false)}>
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         <nav className="flex-1 space-y-1">
